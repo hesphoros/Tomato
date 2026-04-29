@@ -46,6 +46,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.nsh07.pomodoro.ui.Screen
 import org.nsh07.pomodoro.ui.calculatePaneScaffoldDirective
 import org.nsh07.pomodoro.ui.settingsScreen.screens.AboutScreen
+import org.nsh07.pomodoro.ui.settingsScreen.screens.HelloRuanSiQiScreen
 import org.nsh07.pomodoro.ui.settingsScreen.screens.AlarmSettings
 import org.nsh07.pomodoro.ui.settingsScreen.screens.AppearanceSettings
 import org.nsh07.pomodoro.ui.settingsScreen.screens.SettingsMainScreen
@@ -135,6 +136,16 @@ fun SettingsScreenRoot(
                 AboutScreen(
                     contentPadding = contentPadding,
                     isPlus = isPlus,
+                    onBack = backStack::onBack,
+                    onNavigateToHelloRuanSiQi = { backStack.add(Screen.Settings.HelloRuanSiQi) }
+                )
+            }
+
+            entry<Screen.Settings.HelloRuanSiQi>(
+                metadata = detailPane()
+            ) {
+                HelloRuanSiQiScreen(
+                    contentPadding = contentPadding,
                     onBack = backStack::onBack
                 )
             }

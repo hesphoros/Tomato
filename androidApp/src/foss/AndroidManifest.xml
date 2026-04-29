@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  FOSS / self-hosted JetChat: allow http:// URLs on Android 9+ (cleartext blocked by default).
+  HTTPS with dev certs is handled in code; this only affects plain HTTP base URLs.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:usesCleartextTraffic="true"
+        tools:targetApi="28" />
+</manifest>

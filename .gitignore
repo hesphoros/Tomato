@@ -16,3 +16,12 @@ build
 .externalNativeBuild
 .cxx
 local.properties
+
+# Local compose-samples / JetChat clone for alignment reference (not part of Tomato)
+_jetchat_upstream/
+_compose-samples/
+
+# Local release signing (see keystore.properties.example)
+keystore.properties
+androidApp/foss/release/
+androidApp/play/release/

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown as a Tomato-style focus notification; must not reveal chat sender or message body. -->
+    <string name="jetchat_discreet_notif_title">Focus · Tomato</string>
+    <string name="jetchat_discreet_notif_text">Session in progress</string>
+</resources>

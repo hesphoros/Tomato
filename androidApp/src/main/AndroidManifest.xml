@@ -18,6 +18,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Normal (install-time) permission: no runtime prompt. Required for JetChat / any HTTP(S). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Optional: lets the app read Wi‑Fi/cellular “connected” state for clearer errors (still no dialog on most devices). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -40,7 +44,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.Tomato.Splash">
+            android:theme="@style/Theme.Tomato.Splash"
+            android:windowSoftInputMode="adjustNothing">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

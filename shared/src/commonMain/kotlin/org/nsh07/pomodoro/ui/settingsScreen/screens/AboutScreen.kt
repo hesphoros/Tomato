@@ -18,10 +18,11 @@
 package org.nsh07.pomodoro.ui.settingsScreen.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,6 +33,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -41,33 +45,41 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.MaterialTheme.typography
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedListItem
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEach
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_LOWER_BOUND
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.nsh07.pomodoro.di.AppInfo
-import org.nsh07.pomodoro.di.FlavorUI
 import org.nsh07.pomodoro.ui.mergePaddingValues
 import org.nsh07.pomodoro.ui.settingsScreen.components.LicenseBottomSheet
 import org.nsh07.pomodoro.ui.theme.CustomColors.detailPaneTopBarColors
@@ -85,15 +97,15 @@ import tomato.shared.generated.resources.app_name
 import tomato.shared.generated.resources.app_name_plus
 import tomato.shared.generated.resources.arrow_back
 import tomato.shared.generated.resources.back
-import tomato.shared.generated.resources.discord
-import tomato.shared.generated.resources.email
+import tomato.shared.generated.resources.cancel
+import tomato.shared.generated.resources.easter_egg_dialog_error
+import tomato.shared.generated.resources.easter_egg_dialog_field_label
+import tomato.shared.generated.resources.easter_egg_dialog_title
 import tomato.shared.generated.resources.gavel
-import tomato.shared.generated.resources.github
-import tomato.shared.generated.resources.globe
 import tomato.shared.generated.resources.ic_launcher_monochrome
 import tomato.shared.generated.resources.license
+import tomato.shared.generated.resources.ok
 import tomato.shared.generated.resources.pfp
-import tomato.shared.generated.resources.x
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -101,27 +113,20 @@ fun AboutScreen(
     contentPadding: PaddingValues,
     isPlus: Boolean,
     onBack: () -> Unit,
+    onNavigateToHelloRuanSiQi: () -> Unit,
     modifier: Modifier = Modifier,
-    flavorUI: FlavorUI = koinInject(),
     appInfo: AppInfo = koinInject()
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val uriHandler = LocalUriHandler.current
 
     val widthExpanded = currentWindowAdaptiveInfo()
         .windowSizeClass
         .isWidthAtLeastBreakpoint(WIDTH_DP_EXPANDED_LOWER_BOUND)
 
-    val socialLinks = remember {
-        listOf(
-            SocialLink(Res.drawable.github, "https://github.com/nsh07"),
-            SocialLink(Res.drawable.x, "https://x.com/nsh_zero7"),
-            SocialLink(Res.drawable.globe, "https://nsh07.github.io"),
-            SocialLink(Res.drawable.email, "mailto:nishant.28@outlook.com")
-        )
-    }
-
     var showLicense by rememberSaveable { mutableStateOf(false) }
+
+    var versionTapCount by rememberSaveable { mutableIntStateOf(0) }
+    var showEasterEggDialog by remember { mutableStateOf(false) }
 
     val barColors = if (widthExpanded) detailPaneTopBarColors
     else topBarColors
@@ -205,35 +210,20 @@ fun AboutScreen(
                                 Text(
                                     text = "${appInfo.versionName} (${appInfo.versionCode})",
                                     style = typography.labelLarge,
-                                    color = colorScheme.primary
+                                    color = colorScheme.primary,
+                                    modifier = Modifier.clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = ripple()
+                                    ) {
+                                        versionTapCount++
+                                        if (versionTapCount >= EASTER_EGG_VERSION_TAPS) {
+                                            versionTapCount = 0
+                                            showEasterEggDialog = true
+                                        }
+                                    }
                                 )
                             }
                             Spacer(Modifier.weight(1f))
-                            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                FilledTonalIconButton(
-                                    onClick = {
-                                        uriHandler.openUri("https://discord.gg/MHhBQcxHu6")
-                                    },
-                                    shapes = IconButtonDefaults.shapes()
-                                ) {
-                                    Icon(
-                                        painterResource(Res.drawable.discord),
-                                        contentDescription = "Discord",
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-
-                                FilledTonalIconButton(
-                                    onClick = { uriHandler.openUri("https://github.com/nsh07/Tomato") },
-                                    shapes = IconButtonDefaults.shapes()
-                                ) {
-                                    Icon(
-                                        painterResource(Res.drawable.github),
-                                        contentDescription = "GitHub",
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
                         }
                     }
                 }
@@ -256,46 +246,23 @@ fun AboutScreen(
                                 Spacer(Modifier.width(16.dp))
                                 Column {
                                     Text(
-                                        "Nishant Mishra",
+                                        "hesphoros",
                                         style = typography.titleLarge,
                                         color = colorScheme.onSurface,
                                         fontFamily = typography.bodyLarge.fontFamily
                                     )
                                     Text(
-                                        "Developer",
+                                        "hesphoros",
                                         style = typography.labelLarge,
                                         color = colorScheme.secondary
                                     )
                                 }
                                 Spacer(Modifier.weight(1f))
                             }
-                            Spacer(Modifier.height(8.dp))
-                            Row {
-                                Spacer(Modifier.width((64 + 16).dp))
-                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    socialLinks.fastForEach {
-                                        FilledTonalIconButton(
-                                            onClick = { uriHandler.openUri(it.url) },
-                                            shapes = IconButtonDefaults.shapes(),
-                                            modifier = Modifier.width(52.dp)
-                                        ) {
-                                            Icon(
-                                                painterResource(it.icon),
-                                                null,
-                                                modifier = Modifier.size(ButtonDefaults.SmallIconSize)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }
                 item { Spacer(Modifier.height(12.dp)) }
-
-                item { flavorUI.topButton(Modifier) }
-                item { flavorUI.bottomButton(Modifier) }
-
                 item { Spacer(Modifier.height(12.dp)) }
 
                 item {
@@ -316,6 +283,92 @@ fun AboutScreen(
     if (showLicense) {
         LicenseBottomSheet({ showLicense = false })
     }
+
+    if (showEasterEggDialog) {
+        EasterEggPassphraseDialog(
+            onDismiss = {
+                showEasterEggDialog = false
+                versionTapCount = 0
+            },
+            onSuccess = {
+                showEasterEggDialog = false
+                versionTapCount = 0
+                onNavigateToHelloRuanSiQi()
+            }
+        )
+    }
+}
+
+private const val EASTER_EGG_VERSION_TAPS = 7
+private const val EASTER_EGG_PASSPHRASE = "hesphoros"
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun EasterEggPassphraseDialog(
+    onDismiss: () -> Unit,
+    onSuccess: () -> Unit
+) {
+    var passphrase by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
+    BasicAlertDialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .wrapContentWidth()
+                .wrapContentHeight(),
+            shape = shapes.extraLarge,
+            color = colorScheme.surfaceContainerHigh,
+            tonalElevation = AlertDialogDefaults.TonalElevation
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.easter_egg_dialog_title),
+                    style = typography.headlineSmall,
+                    color = colorScheme.onSurface
+                )
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = {
+                        passphrase = it
+                        showError = false
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(Res.string.easter_egg_dialog_field_label)) },
+                    isError = showError,
+                    supportingText = if (showError) {
+                        { Text(stringResource(Res.string.easter_egg_dialog_error)) }
+                    } else null,
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    )
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss, shapes = ButtonDefaults.shapes()) {
+                        Text(stringResource(Res.string.cancel))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            if (passphrase == EASTER_EGG_PASSPHRASE) onSuccess()
+                            else showError = true
+                        },
+                        shapes = ButtonDefaults.shapes()
+                    ) {
+                        Text(stringResource(Res.string.ok))
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Preview
@@ -325,12 +378,8 @@ private fun AboutScreenPreview() {
         AboutScreen(
             contentPadding = PaddingValues(),
             isPlus = true,
-            onBack = {}
+            onBack = {},
+            onNavigateToHelloRuanSiQi = {}
         )
     }
 }
-
-data class SocialLink(
-    val icon: DrawableResource,
-    val url: String
-)

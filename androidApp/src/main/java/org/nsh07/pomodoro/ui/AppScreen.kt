@@ -170,10 +170,16 @@ fun AppScreen(
 
     var showPaywall by remember { mutableStateOf(false) }
 
+    val hideMainBottomBar by remember {
+        derivedStateOf {
+            settingsViewModel.backStack.lastOrNull() == Screen.Settings.HelloRuanSiQi
+        }
+    }
+
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
-                backStack.last() !is Screen.AOD,
+                backStack.last() !is Screen.AOD && !hideMainBottomBar,
                 enter = slideInVertically(motionScheme.slowSpatialSpec()) { it },
                 exit = slideOutVertically(motionScheme.slowSpatialSpec()) { it }
             ) {

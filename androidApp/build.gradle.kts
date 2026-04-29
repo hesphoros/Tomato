@@ -15,6 +15,7 @@
  * If not, see <https://www.gnu.org/licenses/>.
  */
 
+import java.util.Properties
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -36,6 +37,12 @@ tasks.withType(Test::class) {
     }
 }
 
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+}
+
 android {
     namespace = "org.nsh07.pomodoro"
     compileSdk = 36
@@ -54,10 +61,38 @@ android {
         }
     }
 
+    signingConfigs {
+        // JAR (v1) + APK (v2/v3) signatures: some OEM installers report "lacks developer certificate" if v1 is omitted.
+        getByName("debug") {
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
+        if (keystorePropertiesFile.exists()) {
+            create("sideloadRelease") {
+                val storeRelative = keystoreProperties.getProperty("storeFile")
+                    ?: error("keystore.properties must define storeFile")
+                storeFile = rootProject.file(storeRelative)
+                storePassword = keystoreProperties.getProperty("storePassword")
+                    ?: error("keystore.properties must define storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                    ?: error("keystore.properties must define keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                    ?: error("keystore.properties must define keyPassword")
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // Prefer repo-root keystore.properties; otherwise fall back to debug cert for local ./gradlew assemble only.
+            signingConfig = signingConfigs.findByName("sideloadRelease")
+                ?: signingConfigs.getByName("debug")
         }
         debug {
             applicationIdSuffix = ".debug"
@@ -69,6 +104,9 @@ android {
         create("foss") {
             dimension = "version"
             isDefault = true
+            // Self-hosted / sideload build: distinct package from Play (`org.nsh07.pomodoro`) so OEM
+            // installers do not block as "non-official" and installs do not conflict with store signing.
+            applicationIdSuffix = ".foss"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules-foss.pro"
             )
@@ -147,6 +185,9 @@ dependencies {
     implementation(libs.components.resources)
 
     testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.junit)
 
     implementation(project(":shared"))
 }
